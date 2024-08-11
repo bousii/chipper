@@ -1,0 +1,5 @@
+TODO:
+	- Find out how ROMs send input to the emulated processor
+	- Graphics/Display
+	- Keyboard input into the machine
+
