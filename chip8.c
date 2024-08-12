@@ -31,6 +31,131 @@ exit:
 	return ret;
 }
 
+void inc_pc(chip8_t *chip) { chip->pc += 2; }
+
+void cycle(chip8_t *chip) {
+	uint16_t opcode;
+	uint8_t first;
+	uint8_t x;
+	uint8_t y;
+	uint8_t kk;
+	while (1) {
+		opcode = chip->ram[chip->pc] << 8 | chip->ram[chip->pc + 1]; // get current instruction
+		first = opcode >> 12; 
+		x = opcode >> 8 & 0xF;
+		y = opcode >> 4 & 0xF;
+		kk = opcode & 0x00FF;
+		switch (first) { // consider moving opcode processing to separate function
+			case 0x0:
+				switch (opcode) {
+					case 0x00E0:
+					//cls();
+						break;
+					case 0x00EE:
+					//RET
+						break;
+					default:
+					//SYS addr, ignore
+						break;
+				}
+				break;
+			case 0x1:
+				chip->pc = opcode & 0x0FFF;
+				break;
+			case 0x2:
+				chip->sp += 1;
+				chip->stack[chip->sp] = chip->pc;
+				break;
+			case 0x3:
+				if (chip->V[x] == (opcode & 0xFF)) {
+					inc_pc(chip);
+				}
+				break;
+			case 0x4:
+				if (chip->V[x] != (opcode & 0xFF)) {
+					inc_pc(chip);
+				}
+				break;
+			case 0x5:
+				if (chip->V[x] == chip->V[y]) {
+					inc_pc(chip);
+				}
+				break;
+			case 0x6:
+				chip->V[x] = kk;
+				break;
+			case 0x7:
+				chip->V[x] += opcode & 0xFF;
+				break;
+			case 0x8:
+				switch (opcode & 0xF) {
+					case 0x0:
+						chip->V[x] = chip->V[y];
+						break;
+					case 0x1:
+						chip->V[x] |= chip->V[y];
+						break;
+					case 0x2:
+						chip->V[x] &= chip->V[y];
+						break;
+					case 0x3:
+						chip->V[x] ^= chip->V[y];
+						break;
+					case 0x4:
+						chip->V[x] = (chip->V[x] + chip->V[y] & 0xFFFF);
+						if (chip->V[x] + chip->V[y] > 0xFFFF) {
+							chip->V[0xF] = 1;
+						} else {
+							chip->V[0xF] = 0;
+						}
+						break;
+					case 0x5:
+						chip->V[x] = (chip->V[x] - chip->V[y] & 0xFFFF);
+						if (chip->V[x] > chip->V[y]) {
+							chip->V[0xF] = 1;
+						} else {
+							chip->V[0xF] = 0;
+						}
+						break;
+					case 0x6:
+						chip->V[0xF] = chip->V[x] & 1;
+						chip->V[x] >>= 1;
+						break;
+					case 0x7:
+						chip->V[y] = (chip->V[y] - chip->V[x] & 0xFFFF);
+						if (chip->V[y] > chip->V[x]) {
+							chip->V[0xF] = 1;
+						} else {
+							chip->V[0xF] = 0;
+						}
+						break;
+					case 0xE:
+						chip->V[0xF] = chip->V[x] >> 15 & 1;
+						chip->V[x] <<= 1;
+						break;
+				}
+			case 0x9:
+				if (chip->V[x] != chip->V[y]) {
+					inc_pc(chip);
+				}
+				break;
+			case 0xA:
+				chip->I = opcode & 0xFFF;
+				break;
+			case 0xB:
+				chip->pc = chip->V[0] + opcode & 0xFFF;
+				break;
+			case 0xC:
+				break;
+
+
+		}
+
+		inc_pc(chip);
+	}
+	
+
+}
 
 int main(int argc, char *argv[]) {
 	FILE *f;
@@ -55,7 +180,8 @@ int main(int argc, char *argv[]) {
 		exit = 1;
 		goto cleanup;
 	}
-
+	
+	cycle(chip);
 
 cleanup:
 	fclose(f);
