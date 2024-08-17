@@ -1,2 +1,2 @@
 # chipper
-Chip8 emulator, based on Cowgood's hardware spec
+Chip8 emulator, based on Cowgod's hardware spec
