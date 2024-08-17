@@ -67,12 +67,12 @@ void cycle(chip8_t *chip) {
 				chip->stack[chip->sp] = chip->pc;
 				break;
 			case 0x3:
-				if (chip->V[x] == (opcode & 0xFF)) {
+				if (chip->V[x] == kk) {
 					inc_pc(chip);
 				}
 				break;
 			case 0x4:
-				if (chip->V[x] != (opcode & 0xFF)) {
+				if (chip->V[x] != kk) {
 					inc_pc(chip);
 				}
 				break;
@@ -85,7 +85,7 @@ void cycle(chip8_t *chip) {
 				chip->V[x] = kk;
 				break;
 			case 0x7:
-				chip->V[x] += opcode & 0xFF;
+				chip->V[x] += kk;
 				break;
 			case 0x8:
 				switch (opcode & 0xF) {
@@ -146,9 +146,42 @@ void cycle(chip8_t *chip) {
 				chip->pc = chip->V[0] + opcode & 0xFFF;
 				break;
 			case 0xC:
+				chip->V[x] = (rand() % 256) & kk;
 				break;
+			//case 0xD:
+				//do this one later, its pretty bad...
+			//	break;
+			case 0xE:
+				switch (kk) {
+					case 0x9E:
+						//keyboard input
+						break;
+					case 0xA1:
+						//keyboard input
+						break;
+				}
+				break;
+			case 0xF:
+				switch (kk) {
+					case 0x07:
+						chip->V[x] = chip->delay;
+						break;
+					case 0x0A:
+						break;
+					case 0x15:
+						chip->delay = chip->V[x];
+						break;
+					case 0x18:
+						chip->sound = chip->V[x];
+						break;
+					case 0x1E:
+						chip->I += chip->V[x];
+						break;
 
-
+				}
+			default:
+				printf("Unimplemented instruction\n");
+				break;
 		}
 
 		inc_pc(chip);
