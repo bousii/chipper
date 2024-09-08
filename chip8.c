@@ -1,4 +1,4 @@
-#include <X11/Xlib.h>
+#include <SDL2/SDL.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdint.h>
@@ -216,16 +216,30 @@ int main(int argc, char *argv[]) {
 		goto cleanup;
 	}
 
-	XEvent event;
-	Display *display = XOpenDisplay(NULL);
-	Window w = XCreateSimpleWindow(display, DefaultRootWindow(display), 50, 50, 250, 250, 1, BlackPixel(display, 0), WhitePixel(display, 0));
-
-	while(1) {
-		XNextEvent(display, &event);
-		if (event.type == Expose) {
-			XDrawString(display, w, DefaultGC(display, 0), 100, 100, "Thanks for Watching!", 20);
-		}
+	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+		printf("Failed to initialize SDL2 Library\n");
+		exit = -1;
+		goto cleanup;
 	}
+
+	SDL_Window *window = SDL_CreateWindow("SDL2 Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 680, 480, 0);
+
+	if (!window) {
+		printf("Failed to create window\n");
+		exit = -1;
+		goto cleanup;
+	}
+
+	SDL_Surface *window_surface = SDL_GetWindowSurface(window);
+
+	if (!window_surface) {
+		printf("Failed to get the surface from the window\n");
+		exit = -1;
+		goto cleanup;
+	}
+
+	SDL_UpdateWindowSurface(window);
+	SDL_Delay(5000);
 	//cycle(chip);
 
 cleanup:
