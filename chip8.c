@@ -1,4 +1,6 @@
+#include <X11/Xlib.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdint.h>
 #include <stdio.h>
 #include "chip8.h"
@@ -21,10 +23,6 @@ int load_rom(chip8_t *chip, FILE *f) {
 
 	for (size_t i = 0; i < bytes_read; i++) {
 		chip->ram[RAM_OFFSET + i] = opcode_buffer[i];
-		printf("%.2X ", chip->ram[RAM_OFFSET + i]);
-		if (i % 2 != 0) {
-			printf("\n");
-		}
 	}
 exit:
 	free(opcode_buffer);
@@ -45,6 +43,10 @@ void cycle(chip8_t *chip) {
 		x = opcode >> 8 & 0xF;
 		y = opcode >> 4 & 0xF;
 		kk = opcode & 0x00FF;
+		if(opcode == 0) {
+			printf("ZERO BABBOOEY");
+		}
+		printf("Opcode:%X kk:%X X:%X Y:%X First:%X\n", opcode, kk, x, y, first);
 		switch (first) { // consider moving opcode processing to separate function
 			case 0x0:
 				switch (opcode) {
@@ -52,10 +54,8 @@ void cycle(chip8_t *chip) {
 					//cls();
 						break;
 					case 0x00EE:
-					//RET
-						break;
-					default:
-					//SYS addr, ignore
+						chip->pc = chip->stack[chip->sp];
+						chip->sp -= 1;
 						break;
 				}
 				break;
@@ -102,7 +102,7 @@ void cycle(chip8_t *chip) {
 						chip->V[x] ^= chip->V[y];
 						break;
 					case 0x4:
-						chip->V[x] = (chip->V[x] + chip->V[y] & 0xFFFF);
+						chip->V[x] = ((chip->V[x] + chip->V[y]) & 0xFFFF);
 						if (chip->V[x] + chip->V[y] > 0xFFFF) {
 							chip->V[0xF] = 1;
 						} else {
@@ -110,7 +110,7 @@ void cycle(chip8_t *chip) {
 						}
 						break;
 					case 0x5:
-						chip->V[x] = (chip->V[x] - chip->V[y] & 0xFFFF);
+						chip->V[x] = ((chip->V[x] - chip->V[y]) & 0xFFFF);
 						if (chip->V[x] > chip->V[y]) {
 							chip->V[0xF] = 1;
 						} else {
@@ -122,7 +122,7 @@ void cycle(chip8_t *chip) {
 						chip->V[x] >>= 1;
 						break;
 					case 0x7:
-						chip->V[y] = (chip->V[y] - chip->V[x] & 0xFFFF);
+						chip->V[y] = ((chip->V[y] - chip->V[x]) & 0xFFFF);
 						if (chip->V[y] > chip->V[x]) {
 							chip->V[0xF] = 1;
 						} else {
@@ -143,21 +143,21 @@ void cycle(chip8_t *chip) {
 				chip->I = opcode & 0xFFF;
 				break;
 			case 0xB:
-				chip->pc = chip->V[0] + opcode & 0xFFF;
+				chip->pc = (chip->V[0] + opcode) & 0xFFF;
 				break;
 			case 0xC:
 				chip->V[x] = (rand() % 256) & kk;
 				break;
-			//case 0xD:
-				//do this one later, its pretty bad...
-			//	break;
+			case 0xD:
+				printf("Graphics stuff\n");
+				break;
 			case 0xE:
 				switch (kk) {
 					case 0x9E:
-						//keyboard input
+						printf("Input stuff\n");
 						break;
 					case 0xA1:
-						//keyboard input
+						printf("Input stuff\n");
 						break;
 				}
 				break;
@@ -167,6 +167,7 @@ void cycle(chip8_t *chip) {
 						chip->V[x] = chip->delay;
 						break;
 					case 0x0A:
+						printf("More input stuff\n");
 						break;
 					case 0x15:
 						chip->delay = chip->V[x];
@@ -177,14 +178,13 @@ void cycle(chip8_t *chip) {
 					case 0x1E:
 						chip->I += chip->V[x];
 						break;
-
 				}
 			default:
-				printf("Unimplemented instruction\n");
+				printf("%unimp\n", opcode);
 				break;
 		}
-
 		inc_pc(chip);
+		sleep(1);
 	}
 	
 
@@ -194,9 +194,10 @@ int main(int argc, char *argv[]) {
 	FILE *f;
 	chip8_t *chip;
 	int exit = 0;
+
 	if (argc != 2) {
 		printf("Please input the path to the ROM file, exiting...\n");
-		exit = 1;
+		exit = -1;
 		goto arg_clean;
 	}
 	chip = calloc(0, sizeof(*chip));
@@ -205,16 +206,27 @@ int main(int argc, char *argv[]) {
 	f = fopen(argv[1], "rb");
 	if (f == NULL) {
 		printf("Invalid path, exiting...\n");
-		exit = 1;
+		exit = -1;
 		goto file_clean;
 	}
+
 	int ret = load_rom(chip, f);
 	if (ret != 0) {
-		exit = 1;
+		exit = -1;
 		goto cleanup;
 	}
-	
-	cycle(chip);
+
+	XEvent event;
+	Display *display = XOpenDisplay(NULL);
+	Window w = XCreateSimpleWindow(display, DefaultRootWindow(display), 50, 50, 250, 250, 1, BlackPixel(display, 0), WhitePixel(display, 0));
+
+	while(1) {
+		XNextEvent(display, &event);
+		if (event.type == Expose) {
+			XDrawString(display, w, DefaultGC(display, 0), 100, 100, "Thanks for Watching!", 20);
+		}
+	}
+	//cycle(chip);
 
 cleanup:
 	fclose(f);

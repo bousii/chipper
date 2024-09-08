@@ -1,5 +1,5 @@
 TARGET = chip8 
-LIBS = -lm
+LIBS = -lm -lX11
 CC = gcc
 CFLAGS = -g -Wall
 
