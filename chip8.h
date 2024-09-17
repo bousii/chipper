@@ -1,7 +1,7 @@
 #define START_ADDRESS 0x200
 #define RAM_OFFSET 0x200
 #define SCREEN_WIDTH 640
-#define SCREEN_HEIGHT 480
+#define SCREEN_HEIGHT 320
 #define FONTSET_OFFSET 0x50
 #define FONTSET_SIZE 80
 #define KEY_COUNT 16
@@ -26,7 +26,7 @@ typedef struct {
 	uint8_t ram[4096]; // 4 kB of RAM
 	
 
-/* Graphics backend */
+/* Peripherals backend */
 	uint8_t keys[KEY_COUNT];
 	uint8_t video_buffer[VID_WIDTH][VID_HEIGHT];
 

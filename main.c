@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
 		exit = -1;
 		goto arg_clean;
 	}
-	chip = calloc(0, sizeof(*chip));
+	chip = calloc(1, sizeof(*chip));
 	chip->pc = START_ADDRESS;
 
 	f = fopen(argv[1], "rb");
@@ -36,31 +36,11 @@ int main(int argc, char *argv[]) {
 		goto cleanup;
 	}
 
-	perif = calloc(0, sizeof(*perif));
-	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-		printf("Failed to initialize SDL2 Library\n");
-		exit = -1;
+	perif = calloc(1, sizeof(*perif));
+	int val = initialize(perif);
+	if (val != 0) {
 		goto cleanup;
 	}
-
-	perif->window = SDL_CreateWindow("Chipper", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 480, 0);
-
-	if (!(perif->window)) {
-		printf("Failed to create window\n");
-		exit = -1;
-		goto cleanup;
-	}
-
-	perif->window_surface = SDL_GetWindowSurface(perif->window);
-
-	if (!(perif->window_surface)) {
-		printf("Failed to get the surface from the window\n");
-		exit = -1;
-		goto cleanup;
-	}
-
-	SDL_UpdateWindowSurface(perif->window);
-	perif->gRenderer = SDL_CreateRenderer(perif->window, -1, SDL_RENDERER_ACCELERATED);
 
 	SDL_Event e;
 	bool quit = false; 
@@ -70,13 +50,14 @@ int main(int argc, char *argv[]) {
         SDL_RenderFillRect( perif->gRenderer, &fillRect );
 		SDL_RenderPresent(perif->gRenderer);
 		cycle(chip);
-		while( SDL_PollEvent( &e ) ) { 
-			if( e.type == SDL_QUIT ) 
-				quit = true; 
+		while( SDL_PollEvent( &e ) ) {
+			if( e.type == SDL_QUIT )
+				quit = true;
 		}
 	}
 
 cleanup:
+	SDL_DestroyRenderer(perif->gRenderer);
 	SDL_DestroyWindow(perif->window);
 	SDL_Quit();
 	fclose(f);

@@ -79,7 +79,11 @@ void handle_opcode(chip8_t *chip, uint16_t opcode) {
 		case 0x0:
 			switch (opcode) {
 				case 0x00E0:
-					//memset(chip->video_buffer, 0, sizeof(chip->video_buffer));
+					for (size_t i = 0; i < VID_WIDTH; i++) {
+						for(size_t j = 0; j < VID_HEIGHT; j++) {
+							chip->video_buffer[i][j] = 0;
+						}
+					}
 					break;
 				case 0x00EE:
 					chip->pc = chip->stack[chip->sp];
