@@ -35,7 +35,7 @@ typedef struct {
 void load_fonts(chip8_t *chip);
 int load_rom(chip8_t *chip, FILE *f);
 void inc_pc(chip8_t *chip);
-void handle_opcode(chip8_t *chip, uint16_t opcode);
+void handle_opcode(chip8_t *chip);
 void cycle(chip8_t *chip);
 
 #endif

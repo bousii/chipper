@@ -18,5 +18,6 @@ typedef struct {
 	//add keyboard input
 } Peripheral;
 
+void update(uint8_t video_buffer[VID_WIDTH][VID_HEIGHT], Peripheral *perif);
 int initialize(Peripheral *perif);
 #endif

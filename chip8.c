@@ -30,6 +30,10 @@ uint8_t fontset[FONTSET_SIZE] =
 	0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
+void sleep_ms(int milliseconds)
+{
+	usleep(milliseconds * 1000);
+}
 
 void load_fonts(chip8_t *chip) {
 	for(size_t i = 0; i < FONTSET_SIZE; i++) {
@@ -62,15 +66,12 @@ int load_rom(chip8_t *chip, FILE *f) {
 
 void inc_pc(chip8_t *chip) { chip->pc += 2; }
 
-void handle_opcode(chip8_t *chip, uint16_t opcode) {
-	uint8_t first;
-	uint8_t x;
-	uint8_t y;
-	uint8_t kk;
-	first = opcode >> 12; 
-	x = opcode >> 8 & 0xF;
-	y = opcode >> 4 & 0xF;
-	kk = opcode & 0x00FF;
+void handle_opcode(chip8_t *chip) {
+	uint16_t opcode = chip->ram[chip->pc] << 8 | chip->ram[chip->pc + 1]; // get current instruction
+	uint8_t first = opcode >> 12;
+	uint8_t x = opcode >> 8 & 0xF;
+	uint8_t y = opcode >> 4 & 0xF;
+	uint8_t kk = opcode & 0x00FF;
 	if(opcode == 0) {
 		printf("ZERO BABBOOEY");
 	}
@@ -95,8 +96,8 @@ void handle_opcode(chip8_t *chip, uint16_t opcode) {
 			chip->pc = opcode & 0x0FFF;
 			break;
 		case 0x2:
-			chip->stack[chip->sp] = chip->pc;
 			chip->sp += 1;
+			chip->stack[chip->sp] = chip->pc;
 			break;
 		case 0x3:
 			if (chip->V[x] == kk) {
@@ -142,24 +143,24 @@ void handle_opcode(chip8_t *chip, uint16_t opcode) {
 					}
 					break;
 				case 0x5:
-					chip->V[x] = ((chip->V[x] - chip->V[y]) & 0xFFFF);
 					if (chip->V[x] > chip->V[y]) {
 						chip->V[0xF] = 1;
 					} else {
 						chip->V[0xF] = 0;
 					}
+					chip->V[x] = ((chip->V[x] - chip->V[y]) & 0xFFFF);
 					break;
 				case 0x6:
 					chip->V[0xF] = chip->V[x] & 1;
 					chip->V[x] >>= 1;
 					break;
 				case 0x7:
-					chip->V[y] = ((chip->V[y] - chip->V[x]) & 0xFFFF);
 					if (chip->V[y] > chip->V[x]) {
 						chip->V[0xF] = 1;
 					} else {
 						chip->V[0xF] = 0;
 					}
+					chip->V[y] = ((chip->V[y] - chip->V[x]) & 0xFFFF);
 					break;
 				case 0xE:
 					chip->V[0xF] = chip->V[x] >> 15 & 1;
@@ -175,12 +176,21 @@ void handle_opcode(chip8_t *chip, uint16_t opcode) {
 			chip->I = opcode & 0xFFF;
 			break;
 		case 0xB:
-			chip->pc = (chip->V[0] + opcode) & 0xFFF;
+			chip->pc = chip->V[0] + (opcode & 0xFFF);
 			break;
 		case 0xC:
 			chip->V[x] = (rand() % 256) & kk;
 			break;
 		case 0xD:
+			for (uint8_t i = 0; i < (opcode & 0xF); i++) {
+				unsigned char pixel = chip->ram[chip->I + i];
+				for (uint8_t j = 0; j < 8; j++) {
+					if ((pixel & (0x80 >> j)) != 0) {
+						chip->V[0xF] |= chip->video_buffer[chip->V[x] + j][chip->V[y] + i];
+						chip->video_buffer[chip->V[x] + j][chip->V[y] + i] ^= 1;
+					}
+				}
+			}
 			printf("Graphics stuff\n");
 			break;
 		case 0xE:
@@ -210,6 +220,27 @@ void handle_opcode(chip8_t *chip, uint16_t opcode) {
 				case 0x1E:
 					chip->I += chip->V[x];
 					break;
+				case 0x29:
+					chip->I = fontset[chip->V[x] * 5 % 0xF];
+					break;
+				case 0x33:
+					chip->ram[chip->I+2] = chip->V[x] % 10;
+					chip->ram[chip->I+1] = chip->V[x] / 10 % 10;
+					chip->ram[chip->I] = chip->V[x] / 100 % 10;
+					break;
+					break;
+				case 0x55:
+					for (int i = 0; i < x; i++) {
+						chip->ram[chip->I + i] = chip->V[i];
+					}
+					chip->I = chip->I + x + 1;
+					break;
+				case 0x65:
+					for (int i = 0; i < x; i++) {
+						chip->V[i] = chip->ram[chip->I + i];
+					}
+					chip->I = chip->I + x + 1;
+					break;
 			}
 		default:
 			printf("%X unimp\n", opcode);
@@ -218,9 +249,8 @@ void handle_opcode(chip8_t *chip, uint16_t opcode) {
 }
 
 void cycle(chip8_t *chip) {
-	uint16_t opcode = chip->ram[chip->pc] << 8 | chip->ram[chip->pc + 1]; // get current instruction
-	handle_opcode(chip, opcode);
+	handle_opcode(chip);
 	inc_pc(chip);
 	/* Add timer functionality here */
-	sleep(1);
+	sleep_ms(1);
 }

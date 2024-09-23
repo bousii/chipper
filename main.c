@@ -44,11 +44,8 @@ int main(int argc, char *argv[]) {
 
 	SDL_Event e;
 	bool quit = false; 
-	SDL_Rect fillRect = { SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
-	while(!quit) { 
-        SDL_SetRenderDrawColor( perif->gRenderer, 0xFF, 0x00, 0x00, 0xFF );
-        SDL_RenderFillRect( perif->gRenderer, &fillRect );
-		SDL_RenderPresent(perif->gRenderer);
+	while(!quit) {
+		update(chip->video_buffer, perif);
 		cycle(chip);
 		while( SDL_PollEvent( &e ) ) {
 			if( e.type == SDL_QUIT )

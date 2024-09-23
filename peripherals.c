@@ -4,12 +4,15 @@
 #include <SDL2/SDL_render.h>
 
 
-void update(uint8_t *video_buffer, Peripheral *perif) {
+void update(uint8_t video_buffer[VID_WIDTH][VID_HEIGHT], Peripheral *perif) {
 	for (int i = 0; i < VID_WIDTH; i++) {
 		for (int j = 0; j < VID_HEIGHT; j++) {
-			
+			uint8_t rect_color = video_buffer[i][j] == 1 ? 0xFF : 0x00;
+			SDL_SetRenderDrawColor(perif->gRenderer, rect_color, rect_color, rect_color, rect_color);
+			SDL_RenderFillRect( perif->gRenderer, &(perif->pixels[i][j]) );
 		}
 	}
+	SDL_RenderPresent(perif->gRenderer);
 }
 
 int initialize(Peripheral *perif) {
