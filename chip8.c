@@ -224,9 +224,9 @@ void handle_opcode(chip8_t *chip) {
 					chip->I = fontset[chip->V[x] * 5 % 0xF];
 					break;
 				case 0x33:
-					chip->ram[chip->I+2] = chip->V[x] % 10;
-					chip->ram[chip->I+1] = chip->V[x] / 10 % 10;
 					chip->ram[chip->I] = chip->V[x] / 100 % 10;
+					chip->ram[chip->I+1] = chip->V[x] / 10 % 10;
+					chip->ram[chip->I+2] = chip->V[x] % 10;
 					break;
 					break;
 				case 0x55:
@@ -252,5 +252,5 @@ void cycle(chip8_t *chip) {
 	handle_opcode(chip);
 	inc_pc(chip);
 	/* Add timer functionality here */
-	sleep_ms(1);
+	sleep(1);
 }
