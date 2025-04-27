@@ -12,7 +12,6 @@
 typedef struct {
 	SDL_Renderer *gRenderer;
 	SDL_Window *window;
-	SDL_Surface *window_surface;
 	SDL_Rect pixels[VID_WIDTH][VID_HEIGHT];
 
 	//add keyboard input

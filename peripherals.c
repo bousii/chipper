@@ -29,13 +29,6 @@ int initialize(Peripheral *perif) {
 		return -1;
 	}
 
-	perif->window_surface = SDL_GetWindowSurface(perif->window);
-
-	if (!(perif->window_surface)) {
-		printf("Failed to get the surface from the window\n");
-		return -1;
-	}
-
 	for (int i = 0; i < VID_WIDTH; i++) {
 		for (int j = 0; j < VID_HEIGHT; j++) {
 			perif->pixels[i][j].x = i * 10;
@@ -44,6 +37,6 @@ int initialize(Peripheral *perif) {
 			perif->pixels[i][j].h = PIXEL_HEIGHT;
 		}
 	}
-	perif->gRenderer = SDL_CreateRenderer(perif->window, -1, SDL_RENDERER_ACCELERATED);
+	perif->gRenderer = SDL_CreateRenderer(perif->window, -1, SDL_RENDERER_PRESENTVSYNC);
 	return 0;
 }
