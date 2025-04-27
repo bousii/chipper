@@ -1,5 +1,6 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_render.h>
+#include "assert.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -47,7 +48,7 @@ int load_rom(chip8_t *chip, FILE *f) {
 	long file_size = ftell(f);
 	fseek(f,0,SEEK_SET);
 
-	uint8_t *opcode_buffer = (uint8_t*)malloc(file_size * sizeof(uint8_t));
+	uint8_t *opcode_buffer = malloc(file_size * sizeof(uint8_t));
 	size_t bytes_read = fread(opcode_buffer, sizeof(uint8_t), file_size, f);
 	int ret = 0;
 	if(bytes_read != file_size) {
@@ -64,14 +65,26 @@ int load_rom(chip8_t *chip, FILE *f) {
 	return ret;
 }
 
-void inc_pc(chip8_t *chip) { chip->pc += 2; }
+void inc_pc(chip8_t *chip) 
+{
+	chip->pc += 2;
+	assert(chip->pc < RAM_SIZE);
+}
 
-void handle_opcode(chip8_t *chip) {
+int undefined_instruction(uint16_t opcode)
+{
+    printf("unimplemented opcode %X, aborting\n", opcode);
+    return -1;
+
+}
+
+int handle_opcode(chip8_t *chip) {
 	uint16_t opcode = chip->ram[chip->pc] << 8 | chip->ram[chip->pc + 1]; // get current instruction
 	uint8_t first = opcode >> 12;
 	uint8_t x = opcode >> 8 & 0xF;
 	uint8_t y = opcode >> 4 & 0xF;
 	uint8_t kk = opcode & 0x00FF;
+	int ret = 0;
 	if(opcode == 0) {
 		printf("ZERO BABBOOEY");
 	}
@@ -90,10 +103,14 @@ void handle_opcode(chip8_t *chip) {
 					chip->pc = chip->stack[chip->sp];
 					chip->sp -= 1;
 					break;
+				default:
+					ret = undefined_instruction(opcode);
+					break;
 			}
 			break;
 		case 0x1:
 			chip->pc = opcode & 0x0FFF;
+			chip->pc -= 2;
 			break;
 		case 0x2:
 			chip->sp += 1;
@@ -166,6 +183,9 @@ void handle_opcode(chip8_t *chip) {
 					chip->V[0xF] = chip->V[x] >> 15 & 1;
 					chip->V[x] <<= 1;
 					break;
+				default:
+					ret = undefined_instruction(opcode);
+                    break;
 			}
 		case 0x9:
 			if (chip->V[x] != chip->V[y]) {
@@ -173,7 +193,7 @@ void handle_opcode(chip8_t *chip) {
 			}
 			break;
 		case 0xA:
-			chip->I = opcode & 0xFFF;
+			chip->I = opcode & 0xFFFu;
 			break;
 		case 0xB:
 			chip->pc = chip->V[0] + (opcode & 0xFFF);
@@ -228,29 +248,36 @@ void handle_opcode(chip8_t *chip) {
 					chip->ram[chip->I+1] = chip->V[x] / 10 % 10;
 					chip->ram[chip->I+2] = chip->V[x] % 10;
 					break;
-					break;
 				case 0x55:
-					for (int i = 0; i < x; i++) {
+					for (int i = 0; i <= x; i++) {
 						chip->ram[chip->I + i] = chip->V[i];
 					}
-					chip->I = chip->I + x + 1;
 					break;
 				case 0x65:
-					for (int i = 0; i < x; i++) {
+					for (int i = 0; i <= x; i++) {
 						chip->V[i] = chip->ram[chip->I + i];
 					}
-					chip->I = chip->I + x + 1;
+					break;
+				default:
+					ret = undefined_instruction(opcode);
 					break;
 			}
-		default:
-			printf("%X unimp\n", opcode);
-			break;
+            break;
+	    default:
+		    ret = undefined_instruction(opcode);
+            break;
 	}
+    return ret;
 }
 
-void cycle(chip8_t *chip) {
-	handle_opcode(chip);
+int cycle(chip8_t *chip) {
+
+    if (handle_opcode(chip) < 0)
+    {
+        return -1;
+    }
 	inc_pc(chip);
 	/* Add timer functionality here */
-	sleep(1);
+	sleep_ms(250);
+	return 0;
 }

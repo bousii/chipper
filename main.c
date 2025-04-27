@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
 	int exit = 0;
 
 	if (argc != 2) {
-		printf("Please input the path to the ROM file, exiting...\n");
+		printf("Please input the path to the ROM file\n");
 		exit = -1;
 		goto arg_clean;
 	}
@@ -29,7 +29,6 @@ int main(int argc, char *argv[]) {
 		exit = -1;
 		goto file_clean;
 	}
-
 	int ret = load_rom(chip, f);
 	if (ret != 0) {
 		exit = -1;
@@ -46,7 +45,10 @@ int main(int argc, char *argv[]) {
 	bool quit = false; 
 	while(!quit) {
 		update(chip->video_buffer, perif);
-		cycle(chip);
+		if (cycle(chip) < 0)
+		{
+			quit = true;
+		}
 		while( SDL_PollEvent( &e ) ) {
 			if( e.type == SDL_QUIT )
 				quit = true;

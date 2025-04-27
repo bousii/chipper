@@ -1,3 +1,5 @@
+#define RAM_SIZE 4096
+#define STACK_SIZE 16
 #define START_ADDRESS 0x200
 #define RAM_OFFSET 0x200
 #define SCREEN_WIDTH 640
@@ -22,8 +24,8 @@ typedef struct {
 	uint16_t pc; // program counter
 	uint8_t sp; // stack pointer
 	
-	uint16_t stack[16];
-	uint8_t ram[4096]; // 4 kB of RAM
+	uint16_t stack[STACK_SIZE];
+	uint8_t ram[RAM_SIZE]; // 4 kB of RAM
 	
 
 /* Peripherals backend */
@@ -35,7 +37,7 @@ typedef struct {
 void load_fonts(chip8_t *chip);
 int load_rom(chip8_t *chip, FILE *f);
 void inc_pc(chip8_t *chip);
-void handle_opcode(chip8_t *chip);
-void cycle(chip8_t *chip);
+int handle_opcode(chip8_t *chip);
+int cycle(chip8_t *chip);
 
 #endif
