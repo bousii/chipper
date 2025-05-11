@@ -78,6 +78,71 @@ int undefined_instruction(uint16_t opcode)
 
 }
 
+void handle_input(chip8_t *s, SDL_Keycode key, uint8_t val) {
+
+	int index = -1;
+	switch (key) {
+		case SDLK_1:
+			index = 0x1;
+			break;
+		case SDLK_2:
+			index = 0x2;
+			break;
+		case SDLK_3:
+			index = 0x3;
+			break;
+		case SDLK_4:
+			index = 0xC;
+			break;
+		case SDLK_q:
+			index = 0x4;
+			break;
+		case SDLK_w:
+			index = 0x5;
+			break;
+		case SDLK_e:
+			index = 0x6;
+			break;
+		case SDLK_r:
+			index = 0xD;
+			break;
+		case SDLK_a:
+			index = 0x7;
+			break;
+		case SDLK_s:
+			index = 0x8;
+			break;
+		case SDLK_d:
+			index = 0x9;
+			break;
+		case SDLK_f:
+			index = 0xE;
+			break;
+		case SDLK_z:
+			index = 0xA;
+			break;
+		case SDLK_x:
+			index = 0x0;
+			break;
+		case SDLK_c:
+			index = 0xB;
+			break;
+		case SDLK_v:
+			index = 0xF;
+			break;
+		
+	}
+	if (index == -1) {
+		printf("invalid keyboard input: %d\n", key);
+	}
+	s->keys[index] = val;
+	if (s->wait_for_key && s->keys[s->wait_reg]) {
+		s->V[s->wait_reg] = index;
+		s->wait_for_key = false;
+		inc_pc(s);
+	}
+}
+
 int handle_opcode(chip8_t *chip) {
 	uint16_t opcode = chip->ram[chip->pc] << 8 | chip->ram[chip->pc + 1]; // get current instruction
 	uint8_t first = opcode >> 12;
@@ -98,6 +163,7 @@ int handle_opcode(chip8_t *chip) {
 							chip->video_buffer[i][j] = 0;
 						}
 					}
+					chip->dflag = true;
 					break;
 				case 0x00EE:
 					chip->pc = chip->stack[chip->sp];
@@ -211,15 +277,19 @@ int handle_opcode(chip8_t *chip) {
 					}
 				}
 			}
-			printf("Graphics stuff\n");
+			chip->dflag = true;
 			break;
 		case 0xE:
 			switch (kk) {
 				case 0x9E:
-					printf("Input stuff\n");
+				    if (chip->keys[chip->V[x]]) {
+						inc_pc(chip);
+				    }
 					break;
 				case 0xA1:
-					printf("Input stuff\n");
+				    if (!chip->keys[chip->V[x]]) {
+						inc_pc(chip);
+				    }
 					break;
 			}
 			break;
@@ -229,7 +299,8 @@ int handle_opcode(chip8_t *chip) {
 					chip->V[x] = chip->delay;
 					break;
 				case 0x0A:
-					printf("More input stuff\n");
+					chip->wait_for_key = true;
+					chip->wait_reg = x;
 					break;
 				case 0x15:
 					chip->delay = chip->V[x];
@@ -276,8 +347,8 @@ int cycle(chip8_t *chip) {
     {
         return -1;
     }
-	inc_pc(chip);
-	/* Add timer functionality here */
-	sleep_ms(250);
+	if (!chip->wait_for_key) {
+		inc_pc(chip);
+	}
 	return 0;
 }

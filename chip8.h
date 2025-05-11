@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #define RAM_SIZE 4096
 #define STACK_SIZE 16
 #define START_ADDRESS 0x200
@@ -9,6 +10,7 @@
 #define KEY_COUNT 16
 #define VID_WIDTH 64
 #define VID_HEIGHT 32
+#define INSTRUCTIONS_PER_FRAME 16
 
 #ifndef CHIP8_H
 #define CHIP8_H
@@ -32,8 +34,13 @@ typedef struct {
 	uint8_t keys[KEY_COUNT];
 	uint8_t video_buffer[VID_WIDTH][VID_HEIGHT];
 
+	uint8_t wait_reg;
+	bool wait_for_key;
+	bool dflag;
+
 } chip8_t;
 
+void handle_input(chip8_t *chip, SDL_Keycode key, uint8_t value);
 void load_fonts(chip8_t *chip);
 int load_rom(chip8_t *chip, FILE *f);
 void inc_pc(chip8_t *chip);
