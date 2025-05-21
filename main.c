@@ -40,44 +40,40 @@ int main(int argc, char *argv[]) {
 	if (val != 0) {
 		goto cleanup;
 	}
-
+	load_fonts(chip);
 	SDL_Event e;
 	uint32_t last_timer_tick = 0;
 	bool quit = false; 
 	while(!quit) {
 
-			while( SDL_PollEvent( &e ) ) {
-				switch (e.type) {
-					case SDL_KEYDOWN:
-						handle_input(chip, e.key.keysym.sym, 1);
-						break;
-					case SDL_KEYUP:
-						handle_input(chip, e.key.keysym.sym, 0);
-						break;
-					case SDL_QUIT:
-						quit = true;
-						break;
-				}
+		while( SDL_PollEvent( &e ) ) {
+			switch (e.type) {
+				case SDL_KEYDOWN:
+					handle_input(chip, e.key.keysym.sym, 1);
+					break;
+				case SDL_KEYUP:
+					handle_input(chip, e.key.keysym.sym, 0);
+					break;
+				case SDL_QUIT:
+					quit = true;
+					break;
 			}
-			if (cycle(chip) < 0)
-			{
-				quit = true;
-				break;
-			}
-		if (SDL_GetTicks() - last_timer_tick >= 1000 / 60) {//60 Hz
+		}
+
+		if (SDL_GetTicks() - last_timer_tick >= 1000/60) {//60 Hz
 			uint8_t *d = &chip->delay;
 			uint8_t *s = &chip->sound;
 			if (*d > 0) (*d)--;
 			if (*s > 0) (*s)--;
 			last_timer_tick = SDL_GetTicks();
 		}
+		update(chip->video_buffer, perif);
 
-		if (chip->dflag) {
-			update(chip->video_buffer, perif);
-			chip->dflag = false;
+		if (cycle(chip) < 0)
+		{
+			quit = true;
+			break;
 		}
-
-
 	}
 
 cleanup:

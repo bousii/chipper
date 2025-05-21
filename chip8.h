@@ -5,12 +5,11 @@
 #define RAM_OFFSET 0x200
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 320
-#define FONTSET_OFFSET 0x50
+#define FONTSET_OFFSET 0x00
 #define FONTSET_SIZE 80
 #define KEY_COUNT 16
 #define VID_WIDTH 64
 #define VID_HEIGHT 32
-#define INSTRUCTIONS_PER_FRAME 16
 
 #ifndef CHIP8_H
 #define CHIP8_H
@@ -36,7 +35,6 @@ typedef struct {
 
 	uint8_t wait_reg;
 	bool wait_for_key;
-	bool dflag;
 
 } chip8_t;
 
