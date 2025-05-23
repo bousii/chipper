@@ -75,7 +75,72 @@ int undefined_instruction(uint16_t opcode)
 {
     printf("unimplemented opcode %X, aborting\n", opcode);
     return -1;
+}
 
+void handle_input(chip8_t *s, SDL_Keycode key, uint8_t val) {
+
+	int index = -1;
+	switch (key) {
+		case SDLK_1:
+			index = 0x1;
+			break;
+		case SDLK_2:
+			index = 0x2;
+			break;
+		case SDLK_3:
+			index = 0x3;
+			break;
+		case SDLK_4:
+			index = 0xC;
+			break;
+		case SDLK_q:
+			index = 0x4;
+			break;
+		case SDLK_w:
+			index = 0x5;
+			break;
+		case SDLK_e:
+			index = 0x6;
+			break;
+		case SDLK_r:
+			index = 0xD;
+			break;
+		case SDLK_a:
+			index = 0x7;
+			break;
+		case SDLK_s:
+			index = 0x8;
+			break;
+		case SDLK_d:
+			index = 0x9;
+			break;
+		case SDLK_f:
+			index = 0xE;
+			break;
+		case SDLK_z:
+			index = 0xA;
+			break;
+		case SDLK_x:
+			index = 0x0;
+			break;
+		case SDLK_c:
+			index = 0xB;
+			break;
+		case SDLK_v:
+			index = 0xF;
+			break;
+		
+	}
+	if (index == -1) {
+		printf("invalid keyboard input: %d\n", key);
+	}
+	s->keys[index] = val;
+	if (s->wait_for_key && s->keys[s->wait_reg]) {
+		s->V[s->wait_reg] = index;
+		s->wait_for_key = false;
+		inc_pc(s);
+		sleep_ms(1);
+	}
 }
 
 int handle_opcode(chip8_t *chip) {
@@ -100,8 +165,8 @@ int handle_opcode(chip8_t *chip) {
 					}
 					break;
 				case 0x00EE:
-					chip->pc = chip->stack[chip->sp];
 					chip->sp -= 1;
+					chip->pc = chip->stack[chip->sp];
 					break;
 				default:
 					ret = undefined_instruction(opcode);
@@ -113,8 +178,10 @@ int handle_opcode(chip8_t *chip) {
 			chip->pc -= 2;
 			break;
 		case 0x2:
-			chip->sp += 1;
 			chip->stack[chip->sp] = chip->pc;
+			chip->sp += 1;
+			chip->pc = opcode & 0x0FFF;
+			chip->pc -= 2;
 			break;
 		case 0x3:
 			if (chip->V[x] == kk) {
@@ -185,8 +252,9 @@ int handle_opcode(chip8_t *chip) {
 					break;
 				default:
 					ret = undefined_instruction(opcode);
-                    break;
+				break;
 			}
+			break;
 		case 0x9:
 			if (chip->V[x] != chip->V[y]) {
 				inc_pc(chip);
@@ -205,21 +273,29 @@ int handle_opcode(chip8_t *chip) {
 			for (uint8_t i = 0; i < (opcode & 0xF); i++) {
 				unsigned char pixel = chip->ram[chip->I + i];
 				for (uint8_t j = 0; j < 8; j++) {
+					uint8_t screen_x = chip->V[x] + j % VID_WIDTH;
+					uint8_t screen_y = chip->V[y] + i % VID_HEIGHT;
 					if ((pixel & (0x80 >> j)) != 0) {
-						chip->V[0xF] |= chip->video_buffer[chip->V[x] + j][chip->V[y] + i];
-						chip->video_buffer[chip->V[x] + j][chip->V[y] + i] ^= 1;
+						if (chip->video_buffer[screen_x][screen_y] == 1) {
+							chip->V[0xF] = 1;
+						}
+
+						chip->video_buffer[screen_x][screen_y] ^= 1;
 					}
 				}
 			}
-			printf("Graphics stuff\n");
 			break;
 		case 0xE:
 			switch (kk) {
 				case 0x9E:
-					printf("Input stuff\n");
+				    if (chip->keys[chip->V[x]]) {
+						inc_pc(chip);
+				    }
 					break;
 				case 0xA1:
-					printf("Input stuff\n");
+				    if (!chip->keys[chip->V[x]]) {
+						inc_pc(chip);
+				    }
 					break;
 			}
 			break;
@@ -229,7 +305,8 @@ int handle_opcode(chip8_t *chip) {
 					chip->V[x] = chip->delay;
 					break;
 				case 0x0A:
-					printf("More input stuff\n");
+					chip->wait_for_key = true;
+					chip->wait_reg = x;
 					break;
 				case 0x15:
 					chip->delay = chip->V[x];
@@ -241,7 +318,7 @@ int handle_opcode(chip8_t *chip) {
 					chip->I += chip->V[x];
 					break;
 				case 0x29:
-					chip->I = fontset[chip->V[x] * 5 % 0xF];
+					chip->I = chip->V[x] * 5;
 					break;
 				case 0x33:
 					chip->ram[chip->I] = chip->V[x] / 100 % 10;
@@ -276,8 +353,9 @@ int cycle(chip8_t *chip) {
     {
         return -1;
     }
-	inc_pc(chip);
-	/* Add timer functionality here */
-	sleep_ms(250);
+	if (!chip->wait_for_key) {
+		inc_pc(chip);
+		sleep_ms(1);
+	}
 	return 0;
 }
